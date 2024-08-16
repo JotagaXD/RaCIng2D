@@ -1,7 +1,7 @@
 import pygame
 from os.path import join
 
-def cars():
+def cars():  # função que servirá para organizar e importar os sprites dos carrinhos
     sprite_index = 0
     sprite_corredores = pygame.image.load(join('images', 'spritesheet_oficial.png'))
     sprite_width = sprite_corredores.get_width() // 5
