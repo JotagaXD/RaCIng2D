@@ -2,13 +2,13 @@ import pygame
 from os.path import join
 import time
 import score_menu
-def init(display_surface, clock, WINDOW_WIDTH, WINDOW_HEIGHT,highscore,highscore_name,font_base):
+def init(display_surface, clock, WINDOW_WIDTH, WINDOW_HEIGHT,highscore,highscore_name,font_base): # função responsável pelo funcionamento da tela de início do jogo
     press = False
     show = True
-    flash_timer = 0
+    flash_timer = 0    # as variáveis show, flash e flash_time servem para criar um efeito clássico nos jogos 2D, as frases que aparecem e desaparecem periodicamente
     flash_interval = 300
     game = True
-    while not press:
+    while not press:   # o while é executado até que alguma tecla de interação seja pressionada
         flash_timer += clock.get_rawtime()
         display_surface.fill('black')
         menu_surf = pygame.image.load(join('images', 'init', 'menunovao.png'))
@@ -28,13 +28,13 @@ def init(display_surface, clock, WINDOW_WIDTH, WINDOW_HEIGHT,highscore,highscore
             display_surface.blit(scoreimage, (380, 620))
         display_surface.blit(menu_surf, menu_rect)
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE): # escolha de sáida do jogo
                 press = True
                 return False
-        if pygame.key.get_just_pressed()[pygame.K_r]:
+        if pygame.key.get_just_pressed()[pygame.K_r]:  # escolha de início do jogo
             press = True
             return True
-        if pygame.key.get_just_pressed()[pygame.K_h]:
+        if pygame.key.get_just_pressed()[pygame.K_h]:  # escolha de ir para a tela de highscore
             score_menu.scorepage(highscore_name,highscore,WINDOW_WIDTH,WINDOW_HEIGHT,font_base)
         pygame.display.flip()
         pygame.display.flip()
@@ -46,7 +46,7 @@ def end(font_base, WINDOW_WIDTH, WINDOW_HEIGHT,pontuacao,highscore_name,highscor
     display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     fontebase2 = pygame.font.Font('Oxanium-Bold.ttf',30)
     display_surface.fill((0, 0, 0,))
-    if pontuacao > highscore[-1]:
+    if pontuacao > highscore[-1]:  # caso o novo score ultrapasse o menor highscore entre os 5 maiores
         texto_do_usuario = ""
         entrada_concluida = False
         x = 0
@@ -95,13 +95,11 @@ def end(font_base, WINDOW_WIDTH, WINDOW_HEIGHT,pontuacao,highscore_name,highscor
                     salvar.write(f"{h}\n")
                 x += 1
                 entrada_concluida = False
-                if score_menu.scorepage(highscore_name,highscore,WINDOW_WIDTH,WINDOW_HEIGHT,font_base):
+                if score_menu.scorepage(highscore_name,highscore,WINDOW_WIDTH,WINDOW_HEIGHT,font_base):  # exibição da tela de highscore e verificação da escolha do usuário em sair do jogo ou continuar jogando
                     return True
                 else:
                     return False
 
-
-            # print ranking
     else:
         display_surface.fill('black')
         while True:
@@ -114,11 +112,11 @@ def end(font_base, WINDOW_WIDTH, WINDOW_HEIGHT,pontuacao,highscore_name,highscor
             tentardnv_rect = tentardnv_surf.get_rect(center = (WINDOW_WIDTH / 2, WINDOW_HEIGHT*3/5))
             display_surface.blit(tentardnv_surf, tentardnv_rect)
             for event in pygame.event.get():
-                if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE): # saída do jogo
                     return False
                     exit()
 
-            if pygame.key.get_pressed()[pygame.K_r]:
+            if pygame.key.get_pressed()[pygame.K_r]: # retorno ao jogo
                 return True
                 pass
 
