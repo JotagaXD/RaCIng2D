@@ -1,149 +1,150 @@
 import pygame
 from os.path import join
-from random import randint, choice
-from background import Pista
-from screen import *
+from random import randint, choice    # a biblioteca random foi importada para auxiliar em algumas partes do código...
+from background import Pista          # onde são necessárias seleções aleatórias dentro de um intervalo (randint)...
+from screen import *                  # e escolhas aleatórias de entre um conjunto de número pré-definidos (choice)
 from interactions import *
 import imports
 
-class Player(pygame.sprite.Sprite):
+# criação das classes para os objetos dentro do jogo
+class Player(pygame.sprite.Sprite):  # classe criada para auxiliar nas movimentações do carrinho, assim como sprites do mesmo
     def __init__(self, groups):
         super().__init__(groups)
-        self.original_image = pygame.image.load(join('car_6.png')).convert_alpha()
+        self.original_image = pygame.image.load(join('car_6.png')).convert_alpha()  # original.image é utilizada para previnir um erro na rotação do carrinho
         self.original_image = pygame.transform.scale(self.original_image, (48.5, 80))
         self.image = self.original_image
-        self.rect = self.image.get_frect(center = (476, WINDOW_HEIGHT - 160))
-        self.direction = pygame.math.Vector2()
+        self.rect = self.image.get_frect(center = (476, WINDOW_HEIGHT - 160))   # nesse código é bastante utilizado o método "frect", uma método exclusivo do pygame ce, que deixa a movimentação do sprite mais fluida
+        self.direction = pygame.math.Vector2() # função que auxiliará na movimentação dos sprites, é amplamente utilizada no código
         self.speed = 270
         self.rotation = 0
         self.block = 0
 
-    def update(self, dt, size, surf):
+    def update(self, dt, size, surf):  # aqui o objeto "carrinho" terá sua movimentação atualizada de acordo com as interações do usuário e do jogo em si
         self.original_image = surf
         self.original_image = pygame.transform.scale(self.original_image, size)
         self.image = self.original_image
         self.rect = self.image.get_frect(center = (self.rect.center))
         if no_control(player, oil_sprites):
             self.block = pygame.time.get_ticks()
-        if pygame.time.get_ticks() - self.block >= 1805 or pygame.time.get_ticks() < 1805:
-            self.rotation = 0
-            right = int(pygame.key.get_pressed()[pygame.K_d]) if self.rect.right < 687 else 0
+        if pygame.time.get_ticks() - self.block >= 1805 or pygame.time.get_ticks() < 1805:              # utilizei aqui o time do pygame para definir o tempo exato de rotação do carrinho
+            self.rotation = 0                                                                           # enquanto esse tempo não for o suficiente para o carrinho dar uma volta completa...
+            right = int(pygame.key.get_pressed()[pygame.K_d]) if self.rect.right < 687 else 0           # as movimentações do carrinho estarão bloqueadas
             left = int(pygame.key.get_pressed()[pygame.K_a]) if self.rect.left > 265 else 0
             self.direction.x = right - left
             self.direction = self.direction.normalize() if self.direction else self.direction
         else:
-            self.rotation += 200 * dt
+            self.rotation += 200 * dt  # efeito giratório no carrinho caso ele passe pelo óleo na pista
             if self.rotation <= 360:
                 self.image = pygame.transform.rotozoom(self.original_image, self.rotation, 1)
                 self.rect = self.image.get_frect(center = self.rect.center)
             self.direction.x = 0
         self.rect.center += self.direction * self.speed * dt
-class Random(pygame.sprite.Sprite):
+class Random(pygame.sprite.Sprite):   # essa classe servirá para criar os carrinhos que aparecem na pista, os quais o player terá que desviar
     def __init__(self, groups):
         super().__init__(groups)
         self.image = pygame.image.load(f'car_{randint(0,5)}.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (48.5, 80))
-        self.grid = [310, 407, 497, 595]
+        self.grid = [310, 407, 497, 595]  # posição em que os sprites deverão ser gerados
         self.rect = self.image.get_frect(bottomleft = (choice(self.grid), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
+    def update(self, scrool, dt):      # atualização das posições dos randoms
         self.rect.center += self.direction * randint(scrool[0], scrool[1]) * dt
         if self.rect.top > WINDOW_HEIGHT:
             self.kill()
 
-class Oil(pygame.sprite.Sprite):
+class Oil(pygame.sprite.Sprite):  # classe criada para o obstáculo "oléo"
     def __init__(self, surf, groups):
         super().__init__(groups)
         self.image = surf
         self.rect = self.image.get_frect(midbottom = (randint(290, 615), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
+    def update(self, scrool, dt):     # atualização da posição do objeto
         self.rect.center += self.direction * scrool * dt
-        if self.rect.top > WINDOW_HEIGHT:
-            self.kill()
-
-class Slow(pygame.sprite.Sprite):
+        if self.rect.top > WINDOW_HEIGHT:   # deleção dos randoms que não estão mais no escopo da janela, para que não haja perda de
+            self.kill()                     # desempenho quanto a taxa de atualização do jogo, essa estrutura se repetirá...
+                                            # mais vezes ao longo do código
+class Slow(pygame.sprite.Sprite):   # classe criada para o obstáculo "slow"
     def __init__(self, surf,  groups):
         super().__init__(groups)
         self.image = surf
-        self.grid = [340, 430, 520, 617]
+        self.grid = [340, 430, 520, 617] # posição em que os sprites deverão ser gerados
         self.rect = self.image.get_frect(midbottom = (choice(self.grid), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
+    def update(self, scrool, dt):   # atualização da posição do objeto
         self.rect.center += self.direction * scrool * dt
         if self.rect.top > WINDOW_HEIGHT:
             self.kill()
 
-class Coins(pygame.sprite.Sprite):
+
+class Coins(pygame.sprite.Sprite):  # classe criada para o coletável "moeda"
     def __init__(self, frames, groups):
         super().__init__(groups)
         self.frames = frames
         self.frame_index = 0
         self.image = self.frames[self.frame_index]
         self.image = pygame.transform.scale(self.image, (30, 30))
-        self.grid = [315, 407, 498, 593]
+        self.grid = [315, 407, 498, 593]  # posição em que os sprites deverão ser gerados
         self.rect = self.image.get_frect(bottomleft = (choice(self.grid), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
-        self.frame_index += 5 * dt
-        self.image = self.frames[int(self.frame_index) % len(self.frames)]
-        self.image = pygame.transform.scale(self.image, (50, 50))
-        self.rect.center += self.direction * scrool * dt
-        if self.rect.top > WINDOW_HEIGHT or collect_coins():
+    def update(self, scrool, dt):  # atualização da posição do objeto e de suas sprites
+        self.frame_index += 5 * dt                                           # aqui foi usado um método de seleção de sprites para a moeda...
+        self.image = self.frames[int(self.frame_index) % len(self.frames)]   # o qual consiste na obtenção de um índice através do resto de uma divisão...
+        self.image = pygame.transform.scale(self.image, (50, 50))       # o que faz o índice sempre estar no escopo da lista de sprites da moeda...
+        self.rect.center += self.direction * scrool * dt                     # a fim de seja criado um efeito de oscilação na moeda
+        if self.rect.top > WINDOW_HEIGHT or collect_coins(): # o sprite será apagado quando for coletado ou sair do escopo da janela
             self.kill()
-
-class Nitro(pygame.sprite.Sprite):
+class Nitro(pygame.sprite.Sprite):  # classe criada para o coletável "nitro"
     def __init__(self, surf,  groups):
         super().__init__(groups)
         self.image = surf
-        self.grid = [340, 430, 520, 617]
+        self.grid = [340, 430, 520, 617] # posição em que os sprites deverão ser gerados
         self.rect = self.image.get_frect(midbottom = (choice(self.grid), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
+    def update(self, scrool, dt):  # atualização da posição do objeto
         self.rect.center += self.direction * scrool * dt
-        if self.rect.top > WINDOW_HEIGHT or collect_nitro():
+        if self.rect.top > WINDOW_HEIGHT or collect_nitro():  # o sprite será apagado quando for coletado ou sair do escopo da janela
             self.kill()
 
-class Pill(pygame.sprite.Sprite):
+class Pill(pygame.sprite.Sprite):  # classe criada para o coletável "pílula de redução"
     def __init__(self, surf,  groups):
         super().__init__(groups)
         self.image = pygame.transform.scale(surf, (100, 100))
-        self.grid = [340, 430, 520, 617]
+        self.grid = [340, 430, 520, 617]  # posição em que os sprites deverão ser gerados
         self.rect = self.image.get_frect(midbottom = (choice(self.grid), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
+    def update(self, scrool, dt):  # atualização da posição do objeto
         self.rect.center += self.direction * scrool * dt
-        if self.rect.top > WINDOW_HEIGHT or collect_pill():
+        if self.rect.top > WINDOW_HEIGHT or collect_pill():   # o sprite será apagado quando for coletado ou sair do escopo da janela
             self.kill()
 
-class Star(pygame.sprite.Sprite):
+class Star(pygame.sprite.Sprite):  # classe criada para o coletável "estrela mágica"
     def __init__(self, surf,  groups):
         super().__init__(groups)
         self.image = pygame.transform.scale(surf, (50, 50))
-        self.grid = [340, 430, 520, 617]
+        self.grid = [340, 430, 520, 617]  # posição em que os sprites deverão ser gerados
         self.rect = self.image.get_frect(midbottom = (choice(self.grid), 0))
         self.direction = pygame.math.Vector2((0, 1))
 
-    def update(self, scrool, dt):
+    def update(self, scrool, dt):  # atualização da posição do objeto
         self.rect.center += self.direction * scrool * dt
-        if self.rect.top > WINDOW_HEIGHT or collect_star():
+        if self.rect.top > WINDOW_HEIGHT or collect_star():   # o sprite será apagado quando for coletado ou sair do escopo da janela
             self.kill()
 
-def collision():
+def collision():   # função que sinaliza uma possível colisão do carrinho do player com os randoms
     global time_not_collisions
-    if used_star():
+    if used_star():  # tal sinalização é inativada por um certo tempo quando a estrela magica é utilizada
         time_not_collisions = pygame.time.get_ticks()
     if pygame.time.get_ticks() - time_not_collisions > 10000:
-        if pygame.sprite.spritecollide(player, random_sprites, True, pygame.sprite.collide_mask):
-             return True
-
-def collect_coins():
+        if pygame.sprite.spritecollide(player, random_sprites, True, pygame.sprite.collide_mask):  # é amplamente utilizado no código o método "collide_mask"
+             return True                                                                                 # que é muito preciso quanto as colisões dos sprites, as quais...
+                                                                                                         # acontecem apenas quando é detectada a intersecção de pixel entre dois sprites
+def collect_coins():  # função que computa o número de moedas através da colisão do carrinho com as mesmas
     global qnt_moedas
     if pygame.sprite.spritecollide(player, coins_sprites, True, pygame.sprite.collide_mask):
         qnt_moedas += 1
@@ -151,7 +152,7 @@ def collect_coins():
     else:
         return False
 
-def collect_nitro():
+def collect_nitro():  # função que sinaliza a coleta de um galão de nitro, computando cada nitro coletado na reserva de nitro a menos que o limite seja atingido
     global nitro_capacity
     if nitro_capacity < 4:
         if pygame.sprite.spritecollide(player, nitro_sprites, True, pygame.sprite.collide_mask):
@@ -162,7 +163,7 @@ def collect_nitro():
     else:
         return False
 
-def collect_pill():
+def collect_pill(): # função que sinaliza a coleta de uma pílula de redução, quando esta não está no inventário
     global pill
     global timer_pill
     if not pill:
@@ -175,7 +176,7 @@ def collect_pill():
     else:
         return False
 
-def collect_star():
+def collect_star():  # função que sinaliza a coleta de uma estrela mágica, quando esta não está no inventário
     global star
     global timer_star
     if not star:
@@ -188,7 +189,7 @@ def collect_star():
     else:
         return False
 
-def used_nitro():
+def used_nitro():   # função que sinaliza o uso do nitro
     global nitro_capacity
     global nitro_blocked
     if pygame.key.get_just_pressed()[pygame.K_SPACE] and nitro_capacity > 0 and pygame.time.get_ticks() - nitro_blocked > 3000:
@@ -198,7 +199,7 @@ def used_nitro():
     else:
         return False
 
-def used_pill():
+def used_pill():   # função que sinaliza o uso da pilula
     global pill
     global pill_blocked
     if pygame.key.get_just_pressed()[pygame.K_s] and pill and pygame.time.get_ticks() - pill_blocked > 7000:
@@ -208,7 +209,7 @@ def used_pill():
     else:
         return False
 
-def used_star():
+def used_star():   # função que sinaliza o uso da estrela
     global star
     global star_blocked
     global ghost
@@ -220,7 +221,7 @@ def used_star():
     else:
         return False
 
-def size_display():
+def size_display():   # função responsável pela exibição dos dados de interação do jogo
 
     global pontuacao, grey_pill, grey_star, timer_pill, timer_star, timer_init
 
@@ -260,7 +261,7 @@ def size_display():
     time_star_rect = show_time_star.get_frect(center=(WINDOW_WIDTH - 85, 440))
     display_surface.blit(show_time_star, time_star_rect)
 
-    item_pill_surf = pygame.transform.grayscale(pill_surf)
+    item_pill_surf = pygame.transform.grayscale(pill_surf)  # aqui foi utilizado o método transform.grayscale para descolorir a imagem quando o item não tiver sido coletado
     item_pill_surf = pygame.transform.scale(item_pill_surf, (140, 140))
     if pill:
         grey_pill = pygame.time.get_ticks()
@@ -270,7 +271,7 @@ def size_display():
     item_pill_rect = item_pill_surf.get_rect(center=(WINDOW_WIDTH - 220, 485))
     display_surface.blit(item_pill_surf, item_pill_rect)
 
-    item_star_surf = pygame.transform.grayscale(star_surf)
+    item_star_surf = pygame.transform.grayscale(star_surf)  # aqui foi utilizado o método transform.grayscale para descolorir a imagem quando o item não tiver sido coletado
     item_star_surf = pygame.transform.scale(item_star_surf, (67, 67))
     if star:
         grey_star = pygame.time.get_ticks()
@@ -298,22 +299,22 @@ def size_display():
     a_surf = font_dist.render('A', True, (240, 240, 240))
     a_rect = a_surf.get_rect(center=(WINDOW_WIDTH - 185, 680))
     display_surface.blit(a_surf, a_rect)
-    pygame.draw.rect(display_surface, (240, 240, 240), a_rect.inflate(20,5).move(0, -4), 2, 5)
+    pygame.draw.rect(display_surface, (240, 240, 240), a_rect.inflate(20,5).move(0, -4), 2, 5)   # aqui é desenhado um retangulo ao redor da letra
 
     d_surf = font_dist.render('D', True, (240, 240, 240))
     d_rect = d_surf.get_rect(center=(WINDOW_WIDTH - 135, 680))
     display_surface.blit(d_surf, d_rect)
-    pygame.draw.rect(display_surface, (240, 240, 240), d_rect.inflate(20, 5).move(0, -4), 2, 5)
+    pygame.draw.rect(display_surface, (240, 240, 240), d_rect.inflate(20, 5).move(0, -4), 2, 5)  # aqui é desenhado um retangulo ao redor da letra
     right_surf = font_key.render('RIGHT', True, (240, 240, 240))
     right_rect = right_surf.get_rect(center=(WINDOW_WIDTH - 90, 680))
     display_surface.blit(right_surf, right_rect)
 
-def menu_sound(menu_music, game_music):
+def menu_sound(menu_music, game_music):  # função que inicializa a música do menu
     game_music.stop()
     menu_music.set_volume(0.4)
     menu_music.play(-1)
 
-def game_sound(menu_music, game_music):
+def game_sound(menu_music, game_music):   # função que inicializa a música do jogo
     menu_music.stop()
     game_music.set_volume(0.4)
     game_music.play(-1)
@@ -337,11 +338,11 @@ font_time = pygame.font.Font('Oxanium-Bold.ttf', 13)
 font_key = pygame.font.Font('Oxanium-Bold.ttf', 12)
 
 # importando os sprites
-pista_surf = [pygame.image.load(join('images', f'pista-{0}.png')).convert_alpha() for i in range(6)]
-pista_cin = pygame.image.load(join('images', f'pista-{1}.png')).convert_alpha()
+pista_surf = [pygame.image.load(join('images', f'pista-{0}.png')).convert_alpha() for i in range(6)]  # aqui foi utilizado um for loop para setar numa lista, uma mesma imagem de pista diversas vezes
+pista_cin = pygame.image.load(join('images', f'pista-{1}.png')).convert_alpha()                       # e aqui é setada nessa lista a imagem diferente (com easter egg) de uma pista
 pista_cin = pygame.transform.scale(pista_cin, (950, 1615))
 pista_surf.append(pista_cin)
-imports.cars()
+imports.cars()  # chamada do módulo que importará os sprites dos carrinhos
 oil_surf = pygame.image.load(join('images', 'oil.png')).convert_alpha()
 oil_surf = pygame.transform.scale(oil_surf, (47, 47))
 slow_surf = pygame.image.load(join('images', 'slow.png')).convert_alpha()
@@ -357,10 +358,10 @@ star_surf = pygame.image.load(join('images', 'magic_star.png')).convert_alpha()
 # setup de encerramento
 highscore_name = []
 highscore = []
-score = open('SCORE.txt', 'r')
+score = open('SCORE2D.txt', 'r')
 contador = 0
-for files in score:
-    if contador < 5:
+for files in score:   # aqui será setado no arquivo "score", as melhores potuações, caso um score novo ultrapasse um dos 5 melhores,
+    if contador < 5:  # o menor dos melhores é excluído do arquivo, dando lugar ao novo score
         files = files[:-1]
         highscore_name.append(files)
     else:
@@ -374,15 +375,14 @@ game_music = pygame.mixer.Sound(join('audio', 'game_music.mp3'))
 
 menu_sound(menu_music, game_music)
 
-running = init(display_surface, clock, WINDOW_WIDTH, WINDOW_HEIGHT,highscore,highscore_name,font_base)
+running = init(display_surface, clock, WINDOW_WIDTH, WINDOW_HEIGHT,highscore,highscore_name,font_base)  # função inicio retornará um valor booleano que será setado na variável running
 timer_init = pygame.time.get_ticks()
 
 game_sound(menu_music, game_music)
 
 while running:
 
-    print('inicio')
-    game = True
+    game = True  # enquanto essa variável for True, o jogo em si, será executado
     exit, star, pill, ghost = False, False, False, False
     lapse_create = 5000
     last_time = pygame.time.get_ticks()
@@ -431,6 +431,8 @@ while running:
         dt = clock.tick() / 1000
         pontuacao = (((pygame.time.get_ticks() - timer_init) // 100) + (qnt_moedas * 10))
 
+
+        # aumento gradual da dificuldade em função do tempo, até o limite mínimo de 1 random gerador por segundo
         if pygame.time.get_ticks() - last_time > 9000:
             if lapse_create > 1100:
                 lapse_create = difficult(lapse_create)
@@ -438,7 +440,7 @@ while running:
                 if lapse_create < 1100:
                     lapse_create = 1100
 
-        # event loop
+        # verificação dos eventos declarados, como a setagem dos objetos no jogo e a saída do jogo pelo "x" na janela
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game = False
@@ -459,17 +461,18 @@ while running:
             if event.type == coins_set:
                 Coins(coins_surf, coins_sprites)
 
-        if pista.rect.top > -5:
+        if pista.rect.top > -5:  # geração de novos sprites para a pista, à medida que os sprites antigos vão saindo do escopo da janela
             index += 1
             pista = Pista(index, pista_surf, WINDOW_HEIGHT, background_sprites)
 
-        if slow(player, slow_sprites):
+        # parte mecânica do jogo, onde estão inclusos os obstáculos e os efeitos dos items usáveis
+        if slow(player, slow_sprites):  # menor velocidade por um certo tempo em caso de colisão com o "slow"
             time_slow = pygame.time.get_ticks()
         if (pygame.time.get_ticks() - time_slow < 6000) and (pygame.time.get_ticks() > 6000):
             scrool_all = 450
             scrool_random = [60, 62]
         else:
-            if used_nitro():
+            if used_nitro():  # maior velocidade por um certo tempo em caso de uso do nitro, obs: utilizável caso o carrinho não esteja sob efeito do "slow"
                 time_nitro = pygame.time.get_ticks()
             if (pygame.time.get_ticks() - time_nitro < 3000) and (pygame.time.get_ticks() > 3000):
                 scrool_all = 1800
@@ -478,7 +481,7 @@ while running:
                 scrool_all = 900
                 scrool_random = [120, 125]
 
-        if used_pill():
+        if used_pill():   # diminuição do tamanho do carrinho caso a pílula seja usada
             time_pill = pygame.time.get_ticks()
         if pygame.time.get_ticks() - time_pill < 7000 and pygame.time.get_ticks() > 7000:
             timer_pill = (7000 - pygame.time.get_ticks() + time_pill) / 1000  if pygame.time.get_ticks() - time_pill < 7000 else 0
@@ -486,16 +489,16 @@ while running:
         else:
             size = (48.5, 80)
 
-        if ghost:
+        if ghost:  # ativação do modo fantasma do carrinho casa a estrela seja utilizada
             time_ghost = pygame.time.get_ticks()
             ghost = False
         if pygame.time.get_ticks() - time_ghost < 10000 and pygame.time.get_ticks() > 10000:
             timer_star = (8000 - pygame.time.get_ticks() + time_ghost) / 1000 if pygame.time.get_ticks() - time_ghost < 8000 else 0.00
-            player_surf = pygame.image.load(join('images', 'ghost.png')).convert_alpha()
+            player_surf = pygame.image.load(join('images', 'ghost.png')).convert_alpha()  # importação do sprite "ghost" para o efeito do modo fantasma
         else:
             player_surf = pygame.image.load('car_6.png').convert_alpha()
 
-        # update
+        # atualização dos objetos / sprites
         background_sprites.update(scrool_all, dt)
         oil_sprites.update(scrool_all, dt)
         player_sprites.update(dt, size, player_surf)
@@ -506,7 +509,7 @@ while running:
         pill_sprites.update(scrool_all, dt)
         star_sprites.update(scrool_all, dt)
 
-        # printagem do frame
+        # exibição de todos os sprites na janela
         display_surface.fill('black')
         background_sprites.draw(display_surface)
         oil_sprites.draw(display_surface)
@@ -524,14 +527,13 @@ while running:
         if collision():
             game = False
 
-    if exit == False:
+    if exit == False:  # em caso de colisão, a função end é chamada e setará um novo valor booleano á variável running, que definirá a volta ou não ao loop do jogo
         menu_sound(menu_music, game_music)
         running = end(font_base, WINDOW_WIDTH, WINDOW_HEIGHT, pontuacao, highscore_name, highscore, qnt_moedas)
         if running:
             game_sound(menu_music, game_music)
             last_pontuacao = pontuacao
             timer_init = pygame.time.get_ticks()
-
     else:
         running = False
 
